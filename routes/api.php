@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\GroupMemberController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
+use Illuminate\Support\Facades\Request;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -20,6 +22,7 @@ Route::post('/register', [AuthController::class, 'register'])->name('api.registe
 Route::post('/login', [AuthController::class, 'login'])->name('api.login');
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout'])->name('api.logout');
 Route::middleware('auth:sanctum')->get('/user', [AuthController::class, 'user'])->name('api.user');
+
 // Group Routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/groups', [GroupsController::class, 'index'])->name('api.groups ');

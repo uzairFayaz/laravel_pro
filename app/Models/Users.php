@@ -74,4 +74,8 @@ class Users extends Authenticatable
     {
         return $this->hasMany(Message::class, 'user_id');
     }
+    public function joinedGroups()
+{
+    return $this->belongsToMany(Groups::class, 'group_user', 'user_id', 'group_id');
+}
 }

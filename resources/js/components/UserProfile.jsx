@@ -17,7 +17,8 @@ const UserProfile = () => {
 
     const fetchUser = async () => {
         try {
-            const response = await axios.get('/user');
+            const response = await axios.get('/api/user');
+            console.log(response.data)
             setUser(response.data);
         } catch (err) {
             console.error('Fetch User Error:', err.response?.data || err.message);
@@ -28,7 +29,7 @@ const UserProfile = () => {
 
     const fetchGroups = async () => {
         try {
-            const response = await axios.get('/groups');
+            const response = await axios.get('/api/groups');
             setGroups(response.data.data || []);
         } catch (err) {
             console.error('Fetch Groups Error:', err.response?.data || err.message);
@@ -117,6 +118,7 @@ const UserProfile = () => {
                     <h2 className="text-xl font-bold text-gray-900">User Info</h2>
                     <p className="text-gray-700">Name: {user.name}</p>
                     <p className="text-gray-700">Email: {user.email}</p>
+                    <p className=''>phone :{user.phone}</p>
                 </div>
                 <div className="mb-6 bg-white shadow-md rounded-lg p-6">
                     <h3 className="text-lg font-semibold mb-4">Create Group</h3>

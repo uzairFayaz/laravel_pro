@@ -101,11 +101,15 @@ public function logout(Request $request){
 
 }
  public function user(Request $request)
-    {
-        return response()->json([
-            'status' => true,
-            'message' => 'User retrieved successfully',
-            'user' => $request->user(),
-        ], 200);
+{
+    $user = $request->user();
+    if (!$user) {
+        return response()->json(['message' => 'Unauthenticated'], 401);
     }
+    return response()->json([
+        'id' => $user->id,
+        'name' => $user->name,
+        'email' => $user->email,
+    ]);
+}
 }

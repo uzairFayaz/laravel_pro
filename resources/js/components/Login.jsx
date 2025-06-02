@@ -7,7 +7,7 @@ const Login = () => {
     const [message, setMessage] = useState('');
     const navigate = useNavigate();
 
-    const handleChange = (e) => {
+    const handleChange = (e) => {        
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
