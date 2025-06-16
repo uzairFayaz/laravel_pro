@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Groups;
 use App\Models\GroupMembers;
+use App\Models\Message;
+use App\Models\Posts;
+use App\Models\Stories;
 use App\Models\Users;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -16,9 +19,11 @@ class GroupMemberController extends Controller
     {
         try {
             $members = GroupMembers::where('group_id', $groupId)
-                ->with(['user' => function ($query) {
-                    $query->select('id', 'name', 'email');
-                }])
+                ->with([
+                    'user' => function ($query) {
+                        $query->select('id', 'name', 'email');
+                    }
+                ])
                 ->get()
                 ->map(function ($member) {
                     return [
@@ -99,7 +104,7 @@ class GroupMemberController extends Controller
     {
         try {
             $group = Groups::findOrFail($groupId);
-            if ($group->created_by !== auth()->id) {
+            if ($group->created_by !== auth()->id()) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Unauthorized',
@@ -148,4 +153,5 @@ class GroupMemberController extends Controller
             ], 500);
         }
     }
+
 }

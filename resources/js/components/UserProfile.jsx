@@ -45,7 +45,7 @@ const UserProfile = () => {
         e.preventDefault();
         try {
             await axios.get('/sanctum/csrf-cookie');
-            const response = await axios.post('/groups', createForm);
+            const response = await axios.post('/api/groups', createForm);
             setMessage(response.data.message);
             setCreateForm({ name: '', description: '' });
             fetchGroups();
@@ -118,7 +118,7 @@ const UserProfile = () => {
                     <h2 className="text-xl font-bold text-gray-900">User Info</h2>
                     <p className="text-gray-700">Name: {user.name}</p>
                     <p className="text-gray-700">Email: {user.email}</p>
-                    <p className=''>phone :{user.phone}</p>
+                    <p className="text-gray-700">Phone: {user.phone}</p>
                 </div>
                 <div className="mb-6 bg-white shadow-md rounded-lg p-6">
                     <h3 className="text-lg font-semibold mb-4">Create Group</h3>

@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Message extends Model
+class Posts extends Model
 {
     protected $fillable = ['user_id', 'group_id', 'content'];
 

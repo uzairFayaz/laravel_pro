@@ -1,9 +1,10 @@
-import React , {useEffect, useState } from 'react';
+import React , {useEffect, useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { AuthContext } from './AuthContext';
 
 const Navbar = () => {
-    const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
+     const{isAuthenticated, setIsAuthenticated} = useContext(AuthContext);
     const navigate = useNavigate();
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -45,7 +46,8 @@ const Navbar = () => {
             </div>
             <div className="flex items-center space-x-4">
                 <span className="text-2xl">🔔</span>
-                <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-xl">👤</div>
+                <div onClick={()=>{navigate('/')}}
+                className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-xl">👤</div>
                 {isAuthenticated && (
                     <button onClick={handleLogout} className="text-red-500 hover:underline">Logout</button>
                 )}

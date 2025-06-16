@@ -29,4 +29,17 @@ class Groups extends Model
     {
         return $this->hasMany(GroupMembers::class, 'group_id');
     }
+    public function stories()
+    {
+        return $this->hasMany(Stories::class);
+    }
+
+    public function messages()
+    {
+        return $this->hasMany(Message::class);
+    }
+
+    public function posts(){
+        return $this->hasMany(Posts::class);
+    }
 }

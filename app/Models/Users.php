@@ -17,8 +17,8 @@ class Users extends Authenticatable
         'email',
         'password',
         'phone', // Remove if not using SMS OTPs
-        'email_verified_at',
         'remember_token',
+        'is_verified'
     ];
 
     /**
@@ -55,8 +55,8 @@ class Users extends Authenticatable
     public function groups(): BelongsToMany
     {
         return $this->belongsToMany(Groups::class, 'group_members', 'user_id', 'group_id')
-                    ->withPivot('joined_via_code', 'is_shared_to_member')
-                    ->withTimestamps();
+            ->withPivot('joined_via_code', 'is_shared_to_member')
+            ->withTimestamps();
     }
 
     /**
@@ -74,8 +74,13 @@ class Users extends Authenticatable
     {
         return $this->hasMany(Message::class, 'user_id');
     }
+    public function otps()
+    {
+        return $this->hasMany(Otp::class);
+    }
+
     public function joinedGroups()
-{
-    return $this->belongsToMany(Groups::class, 'group_user', 'user_id', 'group_id');
-}
+    {
+        return $this->belongsToMany(Groups::class, 'group_user', 'user_id', 'group_id');
+    }
 }

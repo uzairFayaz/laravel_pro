@@ -1,14 +1,18 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const ForgetPassword = () => {
+const OtpVerification = () => {
     const [formData, setFormData] = useState({
         email: "",
+        otp: "",
     });
     const [message, setMessage] = useState("");
     const [errors, setErrors] = useState([]);
     const navigate = useNavigate();
+    const location = useLocation();
+
+    const { email, isForgotPassword } = location.state || { email: "", isForgotPassword: false };
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -18,15 +22,23 @@ const ForgetPassword = () => {
         e.preventDefault();
         try {
             await axios.get("/sanctum/csrf-cookie");
-            console.log('Forgot Password Request Payload:', formData);
-            const response = await axios.post("/api/forget-password", formData);
-            console.log('Forgot Password Response:', response.data);
+            console.log('OTP Verification Payload:', formData);
+            const endpoint = isForgotPassword ? "/api/forget-password/otp" : "/api/verify-forget-password";
+            const response = await axios.post(endpoint, formData);
+            console.log('OTP Verification Response:', response.data);
             setMessage(response.data.message);
             setErrors([]);
-            navigate("/verify-forget-password", { state: { email: formData.email, isForgotPassword: true } });
+            if (isForgotPassword) {
+                localStorage.setItem('reset_token', response.data.reset_token);
+                navigate("/reset-password", { state: { email: formData.email } });
+            } else {
+                localStorage.setItem('token', response.data.token);
+                localStorage.setItem('user_id', response.data.user.id);
+                navigate("/groups");
+            }
         } catch (err) {
-            console.error("Forgot Password Error:", err.response?.data || err.message);
-            setMessage(err.response?.data?.message || "Failed to process password reset");
+            console.error("OTP Verification Error:", err.response?.data || err.message);
+            setMessage(err.response?.data?.message || "Failed to verify OTP");
             setErrors(err.response?.data?.errors || []);
         }
     };
@@ -66,9 +78,23 @@ const ForgetPassword = () => {
                         <input
                             type="email"
                             name="email"
-                            value={formData.email}
+                            value={formData.email || email}
                             onChange={handleChange}
                             placeholder="Email"
+                            required
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+                    <div className="relative">
+                        <span className="absolute left-3 top-3 text-gray-500">
+                            🔑
+                        </span>
+                        <input
+                            type="text"
+                            name="otp"
+                            value={formData.otp}
+                            onChange={handleChange}
+                            placeholder="Enter OTP"
                             required
                             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                         />
@@ -77,7 +103,7 @@ const ForgetPassword = () => {
                         type="submit"
                         className="w-full bg-blue-500 text-white py-3 rounded-md hover:bg-blue-600 flex items-center justify-center"
                     >
-                        Send OTP <span className="ml-2">➡️</span>
+                        Verify OTP <span className="ml-2">➡️</span>
                     </button>
                 </form>
                 <p className="mt-4 text-center">
@@ -90,4 +116,4 @@ const ForgetPassword = () => {
     );
 };
 
-export default ForgetPassword;
+export default OtpVerification;

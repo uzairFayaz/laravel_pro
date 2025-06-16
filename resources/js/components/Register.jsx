@@ -1,10 +1,17 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const Register = () => {
-    const [formData, setFormData] = useState({ name: '', email: '', password: '', password_confirmation: '' });
-    const [message, setMessage] = useState('');
+    const [formData, setFormData] = useState({
+        name: "",
+        email: "",
+        password: "",
+        password_confirmation: "",
+        phone: "",
+    });
+    const [message, setMessage] = useState("");
+    const [errors, setErrors] = useState([]);
     const navigate = useNavigate();
 
     const handleChange = (e) => {
@@ -14,16 +21,17 @@ const Register = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await axios.get('/sanctum/csrf-cookie');
-            const response = await axios.post('/api/register', formData);
-            localStorage.setItem('token', response.data.token);
-            localStorage.setItem('user_id', response.data.user.id);
-            axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
-            setMessage('Registration successful');
-            navigate('/profile');
+            await axios.get("/sanctum/csrf-cookie");
+            console.log('Register Request Payload:', formData); // Debug
+            const response = await axios.post("/api/register", formData);
+            console.log('Register Response:', response.data);
+            setMessage(response.data.message);
+            setErrors([]);
+            navigate("/verify-otp", { state: { email: formData.email } });
         } catch (err) {
-            console.error('Register Error:', err.response?.data || err.message);
-            setMessage(err.response?.data?.errors?.join(', ') || 'Failed to register');
+            console.error("Register Error:", err.response?.data || err.message);
+            setMessage(err.response?.data?.message || "Failed to register");
+            setErrors(err.response?.data?.errors || []);
         }
     };
 
@@ -31,13 +39,34 @@ const Register = () => {
         <div className="min-h-screen bg-gray-100 flex items-center justify-center py-8">
             <div className="bg-white shadow-md rounded-lg p-6 w-full max-w-md">
                 <div className="flex items-center justify-center mb-4">
-                    <span className="text-2xl font-bold text-gray-900">MyAppName</span>
+                    <span className="text-2xl font-bold text-gray-900">
+                        MyAppName
+                    </span>
                     <span className="ml-2 text-2xl">🔒</span>
                 </div>
-                {message && <p className={`mb-4 text-center ${message.includes('Failed') ? 'text-red-500' : 'text-green-500'}`}>{message}</p>}
+                {message && (
+                    <p
+                        className={`mb-4 text-center ${
+                            message.includes("Failed") || errors.length > 0
+                                ? "text-red-500"
+                                : "text-green-600"
+                        }`}
+                    >
+                        {message}
+                    </p>
+                )}
+                {errors.length > 0 && (
+                    <ul className="mb-4 text-red-500 text-sm">
+                        {errors.map((error, index) => (
+                            <li key={index}>{error}</li>
+                        ))}
+                    </ul>
+                )}
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="relative">
-                        <span className="absolute left-3 top-3 text-gray-500">👤</span>
+                        <span className="absolute left-3 top-3 text-gray-500">
+                            👤
+                        </span>
                         <input
                             type="text"
                             name="name"
@@ -49,7 +78,9 @@ const Register = () => {
                         />
                     </div>
                     <div className="relative">
-                        <span className="absolute left-3 top-3 text-gray-500">✉️</span>
+                        <span className="absolute left-3 top-3 text-gray-500">
+                            ✉️
+                        </span>
                         <input
                             type="email"
                             name="email"
@@ -61,7 +92,22 @@ const Register = () => {
                         />
                     </div>
                     <div className="relative">
-                        <span className="absolute left-3 top-3 text-gray-500">🔒</span>
+                        <span className="absolute left-3 top-3 text-gray-500">
+                            📞
+                        </span>
+                        <input
+                            type="number"
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleChange}
+                            placeholder="Phone Number (optional)"
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+                    <div className="relative">
+                        <span className="absolute left-3 top-3 text-gray-500">
+                            🔒
+                        </span>
                         <input
                             type="password"
                             name="password"
@@ -73,7 +119,9 @@ const Register = () => {
                         />
                     </div>
                     <div className="relative">
-                        <span className="absolute left-3 top-3 text-gray-500">🔒</span>
+                        <span className="absolute left-3 top-3 text-gray-500">
+                            🔒
+                        </span>
                         <input
                             type="password"
                             name="password_confirmation"
@@ -92,7 +140,9 @@ const Register = () => {
                     </button>
                 </form>
                 <p className="mt-4 text-center">
-                    <Link to="/login" className="text-blue-500 hover:underline">Switch to Login? ↩️</Link>
+                    <Link to="/login" className="text-blue-500 hover:underline">
+                        Switch to Login? ↩
+                    </Link>
                 </p>
             </div>
         </div>
