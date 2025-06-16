@@ -1,67 +1,84 @@
-import React, { useState } from "react";
-import axios from "axios";
+import React, { useState } from 'react';
+import axios from 'axios';
+import Select from 'react-select';
 
-const CreateStories = ({ groupId, onStoryCreated }) => {
-    const [content, setContent] = useState("");
-    const [message, setMessage] = useState("");
+const CreateStories = ({ groupId, onStoryCreated, members }) => {
+    const [content, setContent] = useState('');
+    const [selectedMembers, setSelectedMembers] = useState([]);
+    const [message, setMessage] = useState('');
     const [errors, setErrors] = useState([]);
+
+    const memberOptions = members.map(member => ({
+        value: member.user_id,
+        label: member.user_name || member.user_email,
+    }));
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setMessage('');
+        setErrors([]);
+
         try {
-            await axios.get("/sanctum/csrf-cookie");
-            console.log('Create Text Story Payload:', { group_id: groupId, content });
-            const response = await axios.post("/api/groups/stories", {
+            const token = localStorage.getItem('token');
+            const response = await axios.post('/api/stories', {
                 group_id: groupId,
                 content,
+                shared_with: selectedMembers.map(member => member.value),
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
             });
-            console.log('Create Text Story Response:', response.data);
+
             setMessage(response.data.message);
-            setErrors([]);
-            setContent("");
+            setContent('');
+            setSelectedMembers([]);
             onStoryCreated();
         } catch (err) {
-            console.error("Create Text Story Error:", err.response?.data || err.message);
-            setMessage(err.response?.data?.message || "Failed to create text story");
+            setMessage(err.response?.data?.message || 'Failed to create story.');
             setErrors(err.response?.data?.errors || []);
         }
     };
 
     return (
-        <div className="bg-white p-4 rounded-lg shadow-md mb-4">
-            <h3 className="text-lg font-bold mb-2">Create Text Story</h3>
-            {message && (
-                <p
-                    className={`mb-2 text-center ${
-                        message.includes("Failed") || errors.length > 0
-                            ? "text-red-500"
-                            : "text-green-600"
-                    }`}
-                >
-                    {message}
-                </p>
-            )}
-            {errors.length > 0 && (
-                <ul className="mb-2 text-red-500 text-sm">
-                    {errors.map((error, index) => (
-                        <li key={index}>{error}</li>
-                    ))}
-                </ul>
-            )}
+        <div className="mb-4">
             <form onSubmit={handleSubmit} className="space-y-4">
-                <textarea
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    placeholder="Share a quick story (disappears in 24 hours)..."
-                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                    rows="4"
-                    maxLength="500"
-                />
-                <button
-                    type="submit"
-                    className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600"
-                >
-                    Post Story
+                {message && (
+                    <div className={`p-2 rounded ${errors.length > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                        {message}
+                        {errors.length > 0 && (
+                            <ul className="list-disc ml-5">
+                                {errors.map((error, index) => (
+                                    <li key={index}>{error}</li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                )}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700">Story Content</label>
+                    <textarea
+                        value={content}
+                        onChange={(e) => setContent(e.target.value)}
+                        className="w-full p-2 border rounded"
+                        rows="4"
+                        maxLength="500"
+                        placeholder="Write your story..."
+                        required
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700">Share With</label>
+                    <Select
+                        isMulti
+                        options={memberOptions}
+                        value={selectedMembers}
+                        onChange={setSelectedMembers}
+                        className="basic-multi-select"
+                        classNamePrefix="select"
+                        placeholder="Select members..."
+                    />
+                </div>
+                <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                    Create Story
                 </button>
             </form>
         </div>

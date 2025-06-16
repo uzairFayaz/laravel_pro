@@ -11,10 +11,11 @@ use App\Models\Posts;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class GroupsController extends Controller
 {
-    
+   
 
     public function index(Request $request)
     {
@@ -40,10 +41,10 @@ class GroupsController extends Controller
                 'data' => $groups,
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Groups Index Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error('Groups Index Error: ' . $e->getMessage());
             return response()->json([
                 'status' => false,
-                'message' => 'Failed to retrieve groups: ' . $e->getMessage(),
+                'message' => 'Failed to retrieve groups',
             ], 500);
         }
     }
@@ -51,9 +52,8 @@ class GroupsController extends Controller
     public function store(Request $request)
     {
         try {
-            Log::info('Store Group Request', ['user' => $request->user()?->id, 'input' => $request->all()]);
-
-            if (!$request->user()) {
+            $user = $request->user();
+            if (!$user) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Unauthenticated',
@@ -62,7 +62,7 @@ class GroupsController extends Controller
 
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
-                'description' => 'nullable|string',
+                'description' => 'nullable|string|max:500',
             ]);
 
             if ($validator->fails()) {
@@ -73,21 +73,26 @@ class GroupsController extends Controller
                 ], 422);
             }
 
-            $group = Groups::create([
-                'name' => $request->name,
-                'description' => $request->description,
-                'created_by' => $request->user()->id,
-                'is_shared' => $request->input('is_shared', false),
-                'share_code' => \Illuminate\Support\Str::random(8),
-            ]);
+            $group = DB::transaction(function () use ($request, $user) {
+                $group = Groups::create([
+                    'name' => $request->name,
+                    'description' => $request->description,
+                    'created_by' => $user->id,
+                    'is_shared' => $request->input('is_shared', false),
+                    'share_code' => \Illuminate\Support\Str::random(8),
+                ]);
 
-            // Add creator as member
-            GroupMembers::create([
-                'group_id' => $group->id,
-                'user_id' => $request->user()->id,
-                'joined_via_code' => false,
-                'is_shared_to_member' => false,
-            ]);
+                GroupMembers::create([
+                    'group_id' => $group->id,
+                    'user_id' => $user->id,
+                    'joined_via_code' => false,
+                    'is_shared_to_member' => false,
+                ]);
+
+                return $group;
+            });
+
+            Log::info('Group created', ['group_id' => $group->id, 'user_id' => $user->id]);
 
             return response()->json([
                 'status' => true,
@@ -95,10 +100,10 @@ class GroupsController extends Controller
                 'data' => $group,
             ], 201);
         } catch (\Exception $e) {
-            Log::error('Store Group Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error('Create Group Error: ' . $e->getMessage(), ['user_id' => $request->user() ? $request->user()->id : null]);
             return response()->json([
                 'status' => false,
-                'message' => 'Failed to create group: ' . $e->getMessage(),
+                'message' => 'Failed to create group',
             ], 500);
         }
     }
@@ -120,7 +125,7 @@ class GroupsController extends Controller
             if ($group->created_by !== $user->id && !$isMember) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Unauthorized: You are not a member or creator of this group',
+                    'message' => 'Unauthorized: You are not a member or creator',
                 ], 403);
             }
 
@@ -130,10 +135,10 @@ class GroupsController extends Controller
                 'data' => $group,
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Show Group Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error('Show Group Error: ' . $e->getMessage());
             return response()->json([
                 'status' => false,
-                'message' => 'Failed to retrieve group: ' . $e->getMessage(),
+                'message' => 'Failed to retrieve group',
             ], 500);
         }
     }
@@ -143,7 +148,7 @@ class GroupsController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
-                'description' => 'nullable|string',
+                'description' => 'nullable|string|max:500',
             ]);
 
             if ($validator->fails()) {
@@ -169,7 +174,7 @@ class GroupsController extends Controller
                 'data' => $group,
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Update Group Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error('Update Group Error: ' . $e->getMessage());
             return response()->json([
                 'status' => false,
                 'message' => 'Failed to update group',
@@ -193,7 +198,7 @@ class GroupsController extends Controller
                 'message' => 'Group deleted successfully',
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Delete Group Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error('Delete Group Error: ' . $e->getMessage());
             return response()->json([
                 'status' => false,
                 'message' => 'Failed to delete group',
@@ -220,7 +225,7 @@ class GroupsController extends Controller
                 'data' => $group,
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Toggle Sharing Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error('Toggle Sharing Error: ' . $e->getMessage());
             return response()->json([
                 'status' => false,
                 'message' => 'Failed to toggle sharing',
@@ -244,10 +249,10 @@ class GroupsController extends Controller
             }
 
             $group = Groups::where('share_code', $request->share_code)->first();
-            if (!$group->is_shared) { // Fixed logic
+            if (!$group->is_shared) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Group sharing is disabled',
+                    'message' => 'Group sharing disabled',
                 ], 403);
             }
 
@@ -272,7 +277,7 @@ class GroupsController extends Controller
                 'data' => $member,
             ], 201);
         } catch (\Exception $e) {
-            Log::error('Join Group Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error('Join Group Error: ' . $e->getMessage());
             return response()->json([
                 'status' => false,
                 'message' => 'Failed to join group',
@@ -283,9 +288,12 @@ class GroupsController extends Controller
     public function createStory(Request $request)
     {
         try {
+            $user = $request->user();
             $validator = Validator::make($request->all(), [
                 'group_id' => 'required|exists:groups,id',
                 'content' => 'required|string|max:500',
+                'shared_with' => 'nullable|array',
+                'shared_with.*' => 'exists:users,id', // Validate user IDs
             ]);
 
             if ($validator->fails()) {
@@ -296,33 +304,72 @@ class GroupsController extends Controller
                 ], 422);
             }
 
-            $user = $request->user();
-            if (!GroupMembers::where('group_id', $request->group_id)->where('user_id', $user->id)->exists()) {
+            $groupId = $request->group_id;
+            if (!GroupMembers::where('group_id', $groupId)->where('user_id', $user->id)->exists()) {
                 return response()->json([
                     'status' => false,
                     'message' => 'You are not a member of this group',
                 ], 403);
             }
 
-            $story = Stories::create([
-                'user_id' => $user->id,
-                'group_id' => $request->group_id,
-                'content' => $request->content,
-                'type' => 'text',
-                'expires_at' => now()->addHours(24),
-            ]);
+            $story = DB::transaction(function () use ($request, $user, $groupId) {
+                $story = Stories::create([
+                    'user_id' => $user->id,
+                    'group_id' => $groupId,
+                    'content' => $request->content,
+                    'type' => 'text',
+                    'expires_at' => now()->addHours(24),
+                ]);
+
+                // Share with selected members
+                if ($request->has('shared_with') && !empty($request->shared_with)) {
+                    $sharedWith = $request->shared_with;
+                    // Ensure shared_with users are group members
+                    $validMembers = GroupMembers::where('group_id', $groupId)
+                        ->whereIn('user_id', $sharedWith)
+                        ->pluck('user_id')
+                        ->toArray();
+
+                    if (count($validMembers) !== count($sharedWith)) {
+                        throw new \Exception('Some selected users are not group members');
+                    }
+
+                    $storyShares = array_map(function ($userId) use ($story, $groupId) {
+                        return [
+                            'story_id' => $story->id,
+                            'user_id' => $userId,
+                            'group_id' => $groupId,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+                    }, $validMembers);
+
+                    DB::table('story_shares')->insert($storyShares);
+                } else {
+                    // Share with creator by default
+                    DB::table('story_shares')->insert([
+                        'story_id' => $story->id,
+                        'user_id' => $user->id,
+                        'group_id' => $groupId,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                return $story;
+            });
 
             Log::info('Text Story created', ['story_id' => $story->id, 'user_id' => $user->id]);
             return response()->json([
                 'status' => true,
                 'message' => 'Text story created successfully',
-                'story' => $story,
+                'data' => $story->load('user:id,name'),
             ], 201);
         } catch (\Exception $e) {
-            Log::error('Create Text Story Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error('Create Text Story Error: ' . $e->getMessage());
             return response()->json([
                 'status' => false,
-                'message' => 'Failed to create text story',
+                'message' => 'Failed to create text story: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -340,19 +387,30 @@ class GroupsController extends Controller
             }
 
             $stories = Stories::where('group_id', $groupId)
-                ->where('expires_at', '>', now())
+                ->where('expires_at', '>=', now())
                 ->where('type', 'text')
+                ->where(function ($query) use ($user, $groupId) {
+                    $query->where('user_id', $user->id) // Creator sees their own stories
+                          ->orWhereExists(function ($subQuery) use ($user, $groupId) {
+                              $subQuery->select(DB::raw(1))
+                                       ->from('story_shares')
+                                       ->whereColumn('story_shares.story_id', 'stories.id')
+                                       ->where('story_shares.user_id', $user->id)
+                                       ->where('story_shares.group_id', $groupId);
+                          });
+                })
                 ->with('user:id,name')
-                ->orderBy('created_at', 'desc')
                 ->get();
 
             return response()->json([
                 'status' => true,
                 'message' => 'Stories retrieved successfully',
-                'stories' => $stories,
+                'data' => [
+                    'stories' => $stories
+                ]
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Get Text Stories Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error('Get Text Stories Error: ' . $e->getMessage());
             return response()->json([
                 'status' => false,
                 'message' => 'Failed to fetch text stories',
@@ -365,14 +423,14 @@ class GroupsController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'group_id' => 'required|exists:groups,id',
-                'content' => 'required|string|max:1000',
+                'content' => 'required|string|max:500',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Validation error',
-                    'errors' => $validator->errors()->all(),
+                    'data' => ['errors' => $validator->errors()->all()]
                 ], 422);
             }
 
@@ -390,14 +448,15 @@ class GroupsController extends Controller
                 'content' => $request->content,
             ]);
 
-            Log::info('Text Post created', ['post_id' => $post->id, 'user_id' => $user->id]);
             return response()->json([
                 'status' => true,
-                'message' => 'Text post created successfully',
-                'post' => $post->load('user:id,name'),
+                'message' => 'Post created successfully',
+                'data' => [
+                    'post' => $post->load('user:id,name')
+                ]
             ], 201);
         } catch (\Exception $e) {
-            Log::error('Create Text Post Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error('Create Text Post Error: ' . $e->getMessage());
             return response()->json([
                 'status' => false,
                 'message' => 'Failed to create text post',
@@ -425,14 +484,56 @@ class GroupsController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'Posts retrieved successfully',
-                'posts' => $posts,
+                'data' => [
+                    'posts' => $posts
+                ]
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Get Text Posts Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error('Get Text Posts Error: ' . $e->getMessage());
             return response()->json([
                 'status' => false,
                 'message' => 'Failed to fetch text posts',
             ], 500);
         }
     }
+    // ... (all previous methods unchanged)
+
+    public function getGroupMembers(Request $request, $groupId)
+    {
+        try {
+            $user = $request->user();
+            $group = Groups::findOrFail($groupId);
+            if (!GroupMembers::where('group_id', $groupId)->where('user_id', $user->id)->exists()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'You are not a member of this group',
+                ], 403);
+            }
+
+            $members = GroupMembers::where('group_id', $groupId)
+                ->with('user:id,name,email')
+                ->get()
+                ->map(function ($member) {
+                    return [
+                        'user_id' => $member->user_id,
+                        'user_name' => $member->user->name,
+                        'user_email' => $member->user->email,
+                    ];
+                });
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Members retrieved successfully',
+                'data' => $members
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Get Group Members Error: ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to fetch group members',
+            ], 500);
+        }
+    }
+
+    // ... (all other methods unchanged)
 }
