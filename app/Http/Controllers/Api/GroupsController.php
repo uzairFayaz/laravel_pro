@@ -535,5 +535,5 @@ class GroupsController extends Controller
         }
     }
 
-    // ... (all other methods unchanged)
+    
 }

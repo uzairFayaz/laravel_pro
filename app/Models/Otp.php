@@ -13,6 +13,7 @@ class Otp extends Model
         'password',
         'email',
         'otp',
+        'reset_token',
         'expires_at'
 
      ];

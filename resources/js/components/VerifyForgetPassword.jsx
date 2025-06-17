@@ -1,8 +1,9 @@
+
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const OtpVerification = () => {
+const VerifyForgetPassword = () => {
     const [formData, setFormData] = useState({
         email: "",
         otp: "",
@@ -12,7 +13,14 @@ const OtpVerification = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const { email, isForgotPassword } = location.state || { email: "", isForgotPassword: false };
+    const { email: initialEmail, isForgotPassword } = location.state || { email: "", isForgotPassword: true };
+
+    // Initialize email from location state
+    useState(() => {
+        if (initialEmail) {
+            setFormData(prev => ({ ...prev, email: initialEmail }));
+        }
+    }, [initialEmail]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -23,16 +31,19 @@ const OtpVerification = () => {
         try {
             await axios.get("/sanctum/csrf-cookie");
             console.log('OTP Verification Payload:', formData);
-            const endpoint = isForgotPassword ? "/api/forget-password/otp" : "/api/verify-forget-password";
-            const response = await axios.post(endpoint, formData);
+            const response = await axios.post("/api/verify-forget-password", formData);
             console.log('OTP Verification Response:', response.data);
             setMessage(response.data.message);
             setErrors([]);
             if (isForgotPassword) {
-                localStorage.setItem('reset_token', response.data.reset_token);
+                // Store reset token if provided by backend
+                if (response.data.reset_token) {
+                    localStorage.setItem('reset_token', response.data.reset_token);
+                }
                 navigate("/reset-password", { state: { email: formData.email } });
             } else {
-                localStorage.setItem('token', response.data.token);
+                // Handle registration OTP verification
+                localStorage.setItem('reset_token', response.data.token);
                 localStorage.setItem('user_id', response.data.user.id);
                 navigate("/groups");
             }
@@ -64,49 +75,55 @@ const OtpVerification = () => {
                     </p>
                 )}
                 {errors.length > 0 && (
-                    <ul className="mb-4 text-red-500 text-sm">
+                    <ul className="mb-4 text-red-700 text-sm">
                         {errors.map((error, index) => (
                             <li key={index}>{error}</li>
                         ))}
                     </ul>
                 )}
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="relative">
-                        <span className="absolute left-3 top-3 text-gray-500">
-                            ✉️
-                        </span>
-                        <input
-                            type="email"
-                            name="email"
-                            value={formData.email || email}
-                            onChange={handleChange}
-                            placeholder="Email"
-                            required
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                        />
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <div className="relative">
+                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                                ✉️
+                            </span>
+                            <input
+                                type="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                placeholder="Email address"
+                                required
+                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-600 text-sm"
+                            />
+                        </div>
                     </div>
-                    <div className="relative">
-                        <span className="absolute left-3 top-3 text-gray-500">
-                            🔑
-                        </span>
-                        <input
-                            type="text"
-                            name="otp"
-                            value={formData.otp}
-                            onChange={handleChange}
-                            placeholder="Enter OTP"
-                            required
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                        />
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">OTP</label>
+                        <div className="relative">
+                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                                🔑
+                            </span>
+                            <input
+                                type="text"
+                                name="otp"
+                                value={formData.otp}
+                                onChange={handleChange}
+                                placeholder="Enter OTP"
+                                required
+                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-600 text-sm"
+                            />
+                        </div>
                     </div>
                     <button
                         type="submit"
-                        className="w-full bg-blue-500 text-white py-3 rounded-md hover:bg-blue-600 flex items-center justify-center"
+                        className="w-full bg-blue-500 text-white py-3 rounded-md hover:bg-blue-600 flex items-center justify-center text-sm font-medium"
                     >
                         Verify OTP <span className="ml-2">➡️</span>
                     </button>
                 </form>
-                <p className="mt-4 text-center">
+                <p className="mt-4 text-center text-sm">
                     <Link to="/login" className="text-blue-500 hover:underline">
                         Back to Login? ↩
                     </Link>
@@ -116,4 +133,4 @@ const OtpVerification = () => {
     );
 };
 
-export default OtpVerification;
+export default VerifyForgetPassword;

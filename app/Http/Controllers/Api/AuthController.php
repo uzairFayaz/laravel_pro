@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Otp;
 use App\Models\Users;
+use Illuminate\Container\Attributes\Log;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use  Illuminate\Support\Facades\Mail;
 use App\Mail\OtpMail;
+use Illmincate\Support\Str;
 
 
 class AuthController extends Controller
@@ -241,65 +243,84 @@ class AuthController extends Controller
         ]);
     }
 
-    public function verifyForgotPassword(Request $request){
-
+    public function verifyForgotPassword(Request $request)
+    {
         $request->validate([
-            'email' => 'required|email',
+            'email' => 'required|email|exists:users,email',
             'otp' => 'required|string|size:6',
         ]);
 
-        $otpRecord = Otp::where('email', $request->email)
-        ->where('otp', $request->otp)
-        ->where('expires_at','>',now())
-        ->latest()->first();
 
-        if(!$otpRecord){
+
+        $otpRecord = Otp::where('email', $request->email)
+            ->where('otp', $request->otp)
+            ->where('expires_at', '>', now())
+            ->latest()
+            ->first();
+
+        if (!$otpRecord) {
+
             return response()->json([
-                'status' =>false,
-                'message' => 'invalid or expired otp '
-            ],401);
+                'status' => false,
+                'message' => 'Invalid or expired OTP',
+            ], 401);
         }
-        
+
+        // Generate and store token
+        $token = \Illuminate\Support\Str::random(60);
+        try {
+            $otpRecord->update(['reset_token' => $token]);
+
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to process OTP verification',
+            ], 500);
+        }
+
         return response()->json([
             'status' => true,
-            'message' => 'OTP verified you can now change the password'
+            'message' => 'OTP verified successfully',
+            'reset_token' => $token,
+        ], 200);
+    }
+
+    
+   public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'new_password' => 'required|string|min:6|confirmed',
+            'reset_token' => 'string',
         ]);
 
-    }
-    
-    public function resetPassword(Request $request)
-{
-    $request->validate([
-        'email' => 'required|email|exists:users,email',
-        'otp' => 'required|string|size:6',
-        'new_password' => 'required|string|min:6|confirmed',
-    ]);
 
-    $otpRecord = Otp::where('email', $request->email)
-        ->where('otp', $request->otp)
-        ->where('expires_at', '>', now())
-        ->latest()
-        ->first();
 
-    if (!$otpRecord) {
+        $otpRecord = Otp::where('email', $request->email)
+            ->where('reset_token', $request->token)
+            ->where('expires_at', '>', now())
+            ->latest()
+            ->first();
+
+        if (!$otpRecord) {
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Invalid or expired token. Please request a new OTP.',
+            ], 401);
+        }
+
+        $user = Users::where('email', $request->email)->first();
+        $user->update([
+            'password' => bcrypt($request->new_password)
+        ]);
+
+        $otpRecord->delete(); // Clean up
+
         return response()->json([
-            'status' => false,
-            'message' => 'Invalid or expired OTP.',
-        ], 401);
+            'status' => true,
+            'message' => 'Password reset successfully.',
+        ], 200);
     }
-
-    $user = Users::where('email', $request->email)->first();
-    $user->update([
-        'password' => bcrypt($request->new_password)
-    ]);
-
-    $otpRecord->delete(); // Clean up
-
-    return response()->json([
-        'status' => true,
-        'message' => 'Password reset successfully.',
-    ]);
-}
-
-
 }
