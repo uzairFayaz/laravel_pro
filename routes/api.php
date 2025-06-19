@@ -15,9 +15,13 @@ use Illuminate\Support\Facades\Route;
 | All API routes for user authentication, group management, and group members.
 |
 */
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
+
 
 // Authentication Routes
 Route::post('/register', [AuthController::class, 'register'])->name('api.register');
+Route::get('/groups/{id}/qr', [GroupsController::class, 'getGroupQrCode']);
+Route::post('/join-group', [GroupsController::class, 'joinViaQrCode']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->name('api.verify-otp');
 Route::post('/login', [AuthController::class, 'login'])->name('api.login');
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout'])->name('api.logout');

@@ -1,12 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { Html5Qrcode } from 'html5-qrcode';
+
 
 const Group = () => {
     const [groups, setGroups] = useState([]);
     const [formData, setFormData] = useState({ name: '', description: '' });
     const [message, setMessage] = useState('');
     const navigate = useNavigate();
+    const [showQrScanner, setShowQrScanner] = useState(false);
+        const [scanningError, setScanningError] = useState('');
+        const qrCodeRegionId = "qr-reader";
+        const html5QrCodeRef = useRef(null);
 
     useEffect(() => {
         fetchGroups();
@@ -40,9 +46,80 @@ const Group = () => {
             setMessage(err.response?.data?.errors?.join(', ') || 'Failed to create group');
         }
     };
+    useEffect(() => {
+            if (showQrScanner) {
+                // Start the QR scanner
+                const html5QrCode = new Html5Qrcode(qrCodeRegionId);
+                html5QrCodeRef.current = html5QrCode;
+                html5QrCode.start(
+                    { facingMode: "environment" },
+                    { fps: 10, qrbox: 250 },
+                    async (decodedText) => {
+                        setShowQrScanner(false);
+                        setScanningError('');
+                        html5QrCode.stop().catch(() => {});
+                        // Extract code
+                        let shareCode = decodedText;
+                        try {
+                            const url = new URL(decodedText);
+                            const codeFromUrl = url.searchParams.get('code');
+                            if (codeFromUrl) shareCode = codeFromUrl;
+                        } catch (e) {}
+                        try {
+                            const token = localStorage.getItem('token');
+                            const response = await axios.post(
+                                '/api/join-group',
+                                { share_code: shareCode },
+                                { headers: { Authorization: `Bearer ${token}` } }
+                            );
+                            setMessage(response.data.message || 'Joined group!');
+                            fetchGroupData();
+                        } catch (err) {
+                            setMessage(err.response?.data?.message || 'Failed to join group.');
+                        }
+                    },
+                    (err) => {
+                        setScanningError(err || 'Camera error');
+                    }
+                ).catch((err) => setScanningError(err?.message || 'Camera error'));
+                // Cleanup on unmount or close
+                return () => {
+                    html5QrCode.stop().catch(() => {});
+                    html5QrCode.clear().catch(() => {});
+                };
+            }
+        }, [showQrScanner]);
 
     return (
         <div className="min-h-screen bg-gray-100 flex items-center justify-center py-8">
+            {showQrScanner && (
+                <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+                    <div className="bg-white rounded p-4 flex flex-col items-center">
+                        <h2 className="text-lg font-bold mb-2">Scan Group QR Code</h2>
+                        <div id={qrCodeRegionId} style={{ width: 300, height: 300 }} />
+                        {scanningError && <p className="text-red-500 mt-2">{scanningError}</p>}
+                        <button
+                            className="mt-4 px-4 py-2 bg-gray-500 text-white rounded"
+                            onClick={() => {
+                                setShowQrScanner(false);
+                                setScanningError('');
+                                if (html5QrCodeRef.current) {
+                                    html5QrCodeRef.current.stop().catch(() => {});
+                                    html5QrCodeRef.current.clear().catch(() => {});
+                                }
+                            }}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            )}
+             <button
+                className="mb-4 px-4 py-2 bg-green-500 text-white rounded"
+                onClick={() => setShowQrScanner(true)}
+            >
+                Join Group via QR Code
+            </button>
             <div className="bg-white shadow-md rounded-lg p-8 w-full max-w-2xl">
                 <h2 className="text-2xl font-bold text-center text-gray-900 mb-6">Groups</h2>
                 {message && <p className={`mb-4 text-center ${message.includes('Failed') ? 'text-red-500' : 'text-green-500'}`}>{message}</p>}

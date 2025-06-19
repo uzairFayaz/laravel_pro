@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -16,6 +15,7 @@ const GroupDetails = () => {
     const [message, setMessage] = useState('');
     const [errors, setErrors] = useState([]);
     const [copySuccess, setCopySuccess] = useState('');
+    const [showQr, setShowQr] = useState(false);
 
     const fetchGroupData = async () => {
         try {
@@ -30,20 +30,13 @@ const GroupDetails = () => {
                 axios.get(`/api/groups/${id}/stories`, { headers: { Authorization: `Bearer ${token}` } }),
                 axios.get(`/api/groups/${id}/posts`, { headers: { Authorization: `Bearer ${token}` } }),
             ]);
-            console.log('GroupDetails: Fetch Group Response:', groupResponse.data);
-            console.log('GroupDetails: Fetch Members Response:', membersResponse.data);
-            console.log('GroupDetails: Fetch Stories Response:', storiesResponse.data);
-            console.log('GroupDetails: Fetch Posts Response:', postsResponse.data);
-            const groupData = groupResponse.data.data;
-            console.log('Group creator check:', { created_by: groupData.created_by, creator_id: groupData.creator?.id });
-            setGroup(groupData);
+            setGroup(groupResponse.data.data);
             setMembers(membersResponse.data.data || []);
             setStories(storiesResponse.data.data?.stories || []);
             setPosts(postsResponse.data.data?.posts || []);
             setMessage('');
             setErrors([]);
         } catch (err) {
-            console.error('GroupDetails: Fetch Data Error:', err.response?.data || err.message);
             setMessage(err.response?.data?.message || 'Failed to load group data. Please try again.');
             setErrors(err.response?.data?.errors || []);
             if (err.response?.status === 401 || err.response?.status === 403) {
@@ -73,30 +66,24 @@ const GroupDetails = () => {
     };
 
     const toggleGroupSharing = async () => {
-        console.log('ToggleGroupSharing called for group ID:', id);
         try {
             const token = localStorage.getItem('token');
             if (!token) {
-                console.error('No token found');
                 navigate('/login');
                 return;
             }
             setMessage('');
             setErrors([]);
-            console.log('Sending POST to /api/groups/', id, '/toggle-sharing');
             const response = await axios.post(`/api/groups/${id}/toggle-sharing`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            console.log('Toggle response:', response.data);
             setGroup(prevGroup => ({ ...prevGroup, is_shared: response.data.data.is_shared }));
             setMessage(response.data.message);
             setTimeout(() => setMessage(''), 3000);
         } catch (err) {
-            console.error('Toggle Sharing Error:', err.response?.data || err.message);
             setMessage(err.response?.data?.message || 'Failed to toggle sharing.');
             setErrors(err.response?.data?.errors || []);
             if (err.response?.status === 401 || err.response?.status === 403) {
-                console.error('Unauthorized or Forbidden:', err.response?.status);
                 localStorage.removeItem('token');
                 navigate('/login');
             }
@@ -136,24 +123,37 @@ const GroupDetails = () => {
                                     <span className="text-sm text-green-600">{copySuccess}</span>
                                 )}
                             </div>
-                            <div
-                                className="flex items-center space-x-2"
-                                onClick={() => console.log('Toggle parent div clicked')}
-                            >
+                            <div className="flex items-center space-x-2">
                                 <label className="text-sm font-medium text-gray-700">Enable Sharing:</label>
                                 <input
                                     type="checkbox"
                                     checked={group.is_shared || false}
-                                    onChange={(e) => {
-                                        console.log('Checkbox changed:', e.target.checked);
-                                        toggleGroupSharing();
-                                    }}
+                                    onChange={toggleGroupSharing}
                                     className="h-5 w-5"
                                 />
                                 <span className="text-sm text-gray-500">
                                     {group.is_shared ? 'Sharing Enabled' : 'Sharing Disabled'}
                                 </span>
                             </div>
+                            {/* QR Code Section */}
+                            <div className="flex items-center space-x-2">
+                                <button
+                                    className="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
+                                    onClick={() => setShowQr(!showQr)}
+                                >
+                                    {showQr ? 'Hide QR Code' : 'Show QR Code'}
+                                </button>
+                                <span className="text-sm text-gray-500">Scan to join this group</span>
+                            </div>
+                            {showQr && (
+                                <div className="mt-2">
+                                    <img
+                                        src={`/api/groups/${id}/qr`}
+                                        alt="Group QR Code"
+                                        style={{ width: 300, height: 300 }}
+                                    />
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <p className="text-sm text-gray-500">Only the group creator can manage sharing settings.</p>

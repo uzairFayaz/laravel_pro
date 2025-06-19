@@ -16,6 +16,7 @@
         "vite": "^6.3.5"
     },
     "dependencies": {
+        "html5-qrcode": "^2.3.8",
         "react-select": "^5.10.1"
     }
 }

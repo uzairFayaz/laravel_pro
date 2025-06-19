@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class GroupsController extends Controller
 {
@@ -534,6 +535,31 @@ class GroupsController extends Controller
             ], 500);
         }
     }
+public function getGroupQrCode(Request $request, $groupId)
+{
+    $user = $request->user();
+    $group = Groups::findorfail($groupId);
+    // Check if user is allowed (creator or member)
+    /*if ($group->created_by !== $user->id && 
+        !GroupMembers::where('group_id', $groupId)->where('user_id', $user->id)->exists()) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Unauthorized',
+        ], 403);
+    }*/
 
-    
+    // You can encode just the share_code, or a join URL for your frontend/app
+    $joinUrl = url("/join-group?code={$group->share_code}");
+
+    $qr = QrCode::format('svg')->size(300)->generate($joinUrl);
+
+
+    return response($qr);
+}
+public function joinViaQrCode(Request $request)
+{
+    $shareCode = $request->input('code');
+    $request->merge(['share_code' => $shareCode]);
+    return $this->join($request);
+}
 }
