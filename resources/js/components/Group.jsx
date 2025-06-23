@@ -2,6 +2,7 @@ import React, { useState, useEffect,useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Html5Qrcode } from 'html5-qrcode';
+import Cookies from "js-cookie";
 
 
 const Group = () => {
@@ -66,7 +67,7 @@ const Group = () => {
                             if (codeFromUrl) shareCode = codeFromUrl;
                         } catch (e) {}
                         try {
-                            const token = localStorage.getItem('token');
+                            const token = Cookies.get('token');
                             const response = await axios.post(
                                 '/api/join-group',
                                 { share_code: shareCode },

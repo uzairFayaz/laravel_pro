@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
+import Cookies from 'js-cookie';
 
 const VerifyForgetPassword = () => {
     const [formData, setFormData] = useState({
@@ -38,13 +39,13 @@ const VerifyForgetPassword = () => {
             if (isForgotPassword) {
                 // Store reset token if provided by backend
                 if (response.data.reset_token) {
-                    localStorage.setItem('reset_token', response.data.reset_token);
+                    Cookies.set('reset_token', response.data.reset_token);
                 }
                 navigate("/reset-password", { state: { email: formData.email } });
             } else {
                 // Handle registration OTP verification
-                localStorage.setItem('reset_token', response.data.token);
-                localStorage.setItem('user_id', response.data.user.id);
+                Cookies.set('reset_token', response.data.token);
+                Cookies.set('user_id', response.data.user.id);
                 navigate("/groups");
             }
         } catch (err) {

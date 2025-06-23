@@ -16,11 +16,12 @@ use Illuminate\Support\Facades\Route;
 |
 */
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+Route::get('/test-qr', [GroupsController::class, 'testQr']);
 
 
 // Authentication Routes
 Route::post('/register', [AuthController::class, 'register'])->name('api.register');
-Route::get('/groups/{id}/qr', [GroupsController::class, 'getGroupQrCode']);
+
 Route::post('/join-group', [GroupsController::class, 'joinViaQrCode']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->name('api.verify-otp');
 Route::post('/login', [AuthController::class, 'login'])->name('api.login');
@@ -29,10 +30,11 @@ Route::middleware('auth:sanctum')->get('/user', [AuthController::class, 'user'])
 Route::post('/forget-password', [AuthController::class, 'forgotPassword'])->name('api.forget-password');
 Route::post('/verify-forget-password', [AuthController::class, 'verifyForgotPassword'])->name('api.verify-forget-password');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('api.reset-password');
-
+Route::get('/groups/{groupId}/qr', [GroupsController::class, 'getGroupQrCode']);
 // Protected Routes
 Route::middleware('auth:sanctum')->group(function () {
     // Group Routes
+    Route::get('/groups/{groupId}/qr', [GroupsController::class, 'getGroupQrCode']);
     Route::get('/groups', [GroupsController::class, 'index'])->name('api.groups.index');
     Route::post('/groups', [GroupsController::class, 'store'])->name('api.groups.store');
     Route::get('/groups/{id}', [GroupsController::class, 'show'])->name('api.groups.show');

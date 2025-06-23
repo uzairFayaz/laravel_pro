@@ -2,24 +2,25 @@ import React , {useEffect, useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from './AuthContext';
+import Cookies from "js-cookie";
 
 const Navbar = () => {
      const{isAuthenticated, setIsAuthenticated} = useContext(AuthContext);
     const navigate = useNavigate();
     useEffect(() => {
-        const token = localStorage.getItem('token');
+        const token = Cookies.get('token');
         setIsAuthenticated(!!token);
         if(token){
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         }
-    },[]);
+    },[setIsAuthenticated]);
 
     const handleLogout = async () => {
         try {
             await axios.get('/sanctum/csrf-cookie');
-            await axios.post('/api/logout');
-            localStorage.removeItem('token');
-            localStorage.removeItem('user_id');
+            await axios.post('/api/logout',{},{withCredentials:true});
+            Cookies.remove('token');
+            Cookies.remove('user_id');
             delete axios.defaults.headers.common['Authorization'];
             setIsAuthenticated(false);
             navigate('/login');

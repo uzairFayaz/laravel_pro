@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import Select from 'react-select';
+import Cookies from 'js-cookie';
 
 const CreateStories = ({ groupId, onStoryCreated, members }) => {
     const [content, setContent] = useState('');
@@ -19,7 +20,7 @@ const CreateStories = ({ groupId, onStoryCreated, members }) => {
         setErrors([]);
 
         try {
-            const token = localStorage.getItem('token');
+            const token = Cookies.get('token');
             const response = await axios.post('/api/stories', {
                 group_id: groupId,
                 content,
