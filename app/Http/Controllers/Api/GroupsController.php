@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Groups;
 use App\Models\GroupMembers;
-use App\Models\Users;
 use App\Models\Stories;
 use App\Models\Posts;
 use Illuminate\Http\Request;
@@ -187,7 +186,7 @@ class GroupsController extends Controller
     {
         try {
             $group = Groups::findOrFail($id);
-            if ($group->created_by !== auth()->id()) {
+            if ($group->created_by !== auth()->$id) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Unauthorized',
@@ -535,31 +534,33 @@ class GroupsController extends Controller
             ], 500);
         }
     }
-public function getGroupQrCode(Request $request, $groupId)
+    public function getGroupQrCode($groupId)
 {
-    $user = $request->user();
-    $group = Groups::findorfail($groupId);
-    // Check if user is allowed (creator or member)
-    /*if ($group->created_by !== $user->id && 
-        !GroupMembers::where('group_id', $groupId)->where('user_id', $user->id)->exists()) {
-        return response()->json([
-            'status' => false,
-            'message' => 'Unauthorized',
-        ], 403);
-    }*/
-
-    // You can encode just the share_code, or a join URL for your frontend/app
+    $group = Groups::findOrFail($groupId);
     $joinUrl = url("/join-group?code={$group->share_code}");
 
     $qr = QrCode::format('svg')->size(300)->generate($joinUrl);
 
-
     return response($qr);
 }
+
 public function joinViaQrCode(Request $request)
 {
     $shareCode = $request->input('code');
     $request->merge(['share_code' => $shareCode]);
     return $this->join($request);
 }
+
+public function testQr()
+{
+    $text = 'https://example.com/test-link';
+
+    
+    $qr = 
+        QrCode::format('svg')->size(300)->generate($text)
+    ;
+    return response($qr);
+}
+
+
 }

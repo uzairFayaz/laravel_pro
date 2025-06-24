@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
+import Cookies from "js-cookie";
 
 const OtpVerification = () => {
     const location = useLocation();
@@ -19,8 +20,8 @@ const OtpVerification = () => {
                 otp,
             });
             console.log("OTP Verification Response:", response.data); // Debug
-            localStorage.setItem("token", response.data.token);
-            localStorage.setItem("user_id", response.data.user.id);
+            Cookies.set("token", response.data.token);
+            Cookies.set("user_id", response.data.user.id);
             axios.defaults.headers.common[
                 "Authorization"
             ] = `Bearer ${response.data.token}`;

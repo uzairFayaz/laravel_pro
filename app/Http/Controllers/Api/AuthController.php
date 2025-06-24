@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use  Illuminate\Support\Facades\Mail;
 use App\Mail\OtpMail;
-use Illmincate\Support\Str;
+use Illuminate\Support\Str;
 
 
 class AuthController extends Controller
@@ -267,7 +267,7 @@ class AuthController extends Controller
         }
 
         // Generate and store token
-        $token = \Illuminate\Support\Str::random(60);
+        $token = Str::random(60);
         try {
             $otpRecord->update(['reset_token' => $token]);
 

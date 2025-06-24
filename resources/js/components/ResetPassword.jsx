@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
+import Cookies from "js-cookie";
 
 const ResetPassword = () => {
     const [formData, setFormData] = useState({
@@ -18,7 +19,7 @@ const ResetPassword = () => {
     // Initialize email from location state
     useEffect(() => {
         if (initialEmail) {
-            setFormData(prev => ({ ...prev, email: initialEmail }));
+            setFormData((prev) => ({ ...prev, email: initialEmail }));
         }
     }, [initialEmail]);
 
@@ -30,27 +31,34 @@ const ResetPassword = () => {
         e.preventDefault();
         try {
             await axios.get("/sanctum/csrf-cookie");
-            const resetToken = localStorage.getItem('reset_token');
-            console.log('Form Data:', formData);
-            console.log('Reset Token from localStorage:', resetToken);
+            const resetToken = Cookies.get("reset_token");
+            console.log("Form Data:", formData);
+            console.log("Reset Token from localStorage:", resetToken);
             if (!resetToken) {
-                console.error('No reset_token found in localStorage');
-                throw new Error("Reset token not found. Please request a new OTP.");
+                console.error("No reset_token found in localStorage");
+                throw new Error(
+                    "Reset token not found. Please request a new OTP."
+                );
             }
             const payload = {
                 ...formData,
                 token: resetToken,
             };
-            console.log('Reset Password Payload:', payload);
+            console.log("Reset Password Payload:", payload);
             const response = await axios.post("/api/reset-password", payload);
-            console.log('Reset Password Response:', response.data);
+            console.log("Reset Password Response:", response.data);
             setMessage(response.data.message);
             setErrors([]);
-            localStorage.removeItem('reset_token');
+            Cookies.remove("reset_token");
             navigate("/login");
         } catch (err) {
-            console.error("Reset Password Error:", err.response?.data || err.message);
-            setMessage(err.response?.data?.message || "Failed to reset password");
+            console.error(
+                "Reset Password Error:",
+                err.response?.data || err.message
+            );
+            setMessage(
+                err.response?.data?.message || "Failed to reset password"
+            );
             setErrors(err.response?.data?.errors || []);
         }
     };
@@ -84,7 +92,9 @@ const ResetPassword = () => {
                 )}
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Email
+                        </label>
                         <div className="relative">
                             <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
                                 ✉️
@@ -101,7 +111,9 @@ const ResetPassword = () => {
                         </div>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            New Password
+                        </label>
                         <div className="relative">
                             <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
                                 🔒
@@ -118,7 +130,9 @@ const ResetPassword = () => {
                         </div>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Confirm Password
+                        </label>
                         <div className="relative">
                             <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
                                 🔒
