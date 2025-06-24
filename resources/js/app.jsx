@@ -14,7 +14,7 @@ import Groups from "./components/Group";
 import GroupDetails from "./components/GroupDetails";
 import NotFound from "./components/NotFound";
 import { AuthProvider } from "./components/AuthContext";
-import OtpVerification from "./components/VerifyForgetPassword";
+import OtpVerification from "./components/OtpVerification";
 import ForgetPassword from "./components/ForgetPassword";
 import VerifyForgetPassword from "./components/VerifyForgetPassword";
 import ResetPassword from "./components/ResetPassword";
