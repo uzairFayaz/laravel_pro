@@ -70,6 +70,11 @@ return [
         //     'table' => 'users',
         // ],
     ],
+    'api' => [  // ✅ THIS GUARD IS REQUIRED
+        'driver' => 'token', // or 'sanctum' if you're using Sanctum
+        'provider' => 'users',
+        'hash' => false,
+    ],
 
     /*
     |--------------------------------------------------------------------------

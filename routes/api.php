@@ -23,6 +23,7 @@ Route::get('/test-qr', [GroupsController::class, 'testQr']);
 Route::post('/register', [AuthController::class, 'register'])->name('api.register');
 
 Route::post('/join-group', [GroupsController::class, 'joinViaQrCode']);
+Route::post('/groups/join', [GroupsController::class, 'join'])->name('api.groups.join');
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->name('api.verify-otp');
 Route::post('/login', [AuthController::class, 'login'])->name('api.login');
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout'])->name('api.logout');
@@ -30,10 +31,11 @@ Route::middleware('auth:sanctum')->get('/user', [AuthController::class, 'user'])
 Route::post('/forget-password', [AuthController::class, 'forgotPassword'])->name('api.forget-password');
 Route::post('/verify-forget-password', [AuthController::class, 'verifyForgotPassword'])->name('api.verify-forget-password');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('api.reset-password');
-Route::get('/groups/{groupId}/qr', [GroupsController::class, 'getGroupQrCode']);
 // Protected Routes
 Route::middleware('auth:sanctum')->group(function () {
     // Group Routes
+    Route::post('/join-group', [GroupsController::class, 'joinViaQrCode']);
+    Route::post('/groups/join', [GroupsController::class, 'join'])->name('api.groups.join');
     Route::get('/groups/{groupId}/qr', [GroupsController::class, 'getGroupQrCode']);
     Route::get('/groups', [GroupsController::class, 'index'])->name('api.groups.index');
     Route::post('/groups', [GroupsController::class, 'store'])->name('api.groups.store');
@@ -41,7 +43,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/groups/{id}', [GroupsController::class, 'update'])->name('api.groups.update');
     Route::delete('/groups/{id}', [GroupsController::class, 'destroy'])->name('api.groups.destroy');
     Route::post('/groups/{id}/toggle-sharing', [GroupsController::class, 'toggleSharing'])->name('api.groups.toggle-sharing');
-    Route::post('/groups/join', [GroupsController::class, 'join'])->name('api.groups.join');
+
 
     // Group Member Routes
     Route::get('/groups/{group}/members', [GroupMemberController::class, 'index'])->name('api.groups.members.index');

@@ -186,11 +186,11 @@ class GroupsController extends Controller
     {
         try {
             $group = Groups::findOrFail($id);
-            if ($group->created_by !== auth()->$id) {
+            if ($group->created_by !== auth()->id()) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Unauthorized',
-                ], 403);
+            ], 403);
             }
             $group->delete();
             return response()->json([
@@ -239,6 +239,7 @@ class GroupsController extends Controller
             $validator = Validator::make($request->all(), [
                 'share_code' => 'required|string|exists:groups,share_code',
             ]);
+
 
             if ($validator->fails()) {
                 return response()->json([
@@ -546,8 +547,14 @@ class GroupsController extends Controller
 
 public function joinViaQrCode(Request $request)
 {
+
     $shareCode = $request->input('code');
     $request->merge(['share_code' => $shareCode]);
+    \Illuminate\Support\Facades\Log::info('JOIN VIA QR:', [
+    'code' => $request->input('code'),
+    'share_code' => $shareCode
+]);
+
     return $this->join($request);
 }
 
